@@ -5,6 +5,8 @@ defmodule EmailNotificationsWeb.UserController do
   use EmailNotificationsWeb, :controller
   alias EmailNotifications.Services.UserService
 
+  plug :ensure_admin when action in [:upgrade_user, :downgrade_user, :add_admin, :revoke_admin, :make_superuser, :revoke_superuser]
+
 
   def register(conn, %{
         "email" => email,
@@ -156,17 +158,61 @@ defmodule EmailNotificationsWeb.UserController do
   end
 
 
-  # def profile(conn, _params) do
-  #   user_id = get_user_id(conn)
-  #   user = UserService.get_user_by_id(user_id)
-  #   json(conn, user)
-  # end
+  def upgrade_user(conn, %{"user_id" => user_id}) do
+    case UserService.upgrade_user(user_id) do
+      {:ok, :updated} -> json(conn, %{status: "success", message: "User upgraded"})
+      {:error, :user_not_found} -> json(conn, %{status: "error", message: "User not found"})
+    end
+  end
 
-  # defp get_user_id(conn) do
-  #   {:ok, claims} = JWTAuth.verify_jwt(get_token(conn))
-  #   claims["sub"]
-  # end
+  def downgrade_user(conn, %{"user_id" => user_id}) do
+    case UserService.downgrade_user(user_id) do
+      {:ok, :updated} -> json(conn, %{status: "success", message: "User downgraded"})
+      {:error, :user_not_found} -> json(conn, %{status: "error", message: "User not found"})
+    end
+  end
 
-  # defp get_token(conn), do: get_req_header(conn, "authorization") |> List.first() |> String.replace("Bearer ", "")
+  def add_admin(conn, %{"user_id" => user_id}) do
+    case UserService.add_admin(user_id) do
+      {:ok, :updated} -> json(conn, %{status: "success", message: "Admin added"})
+      {:error, :user_not_found} -> json(conn, %{status: "error", message: "User not found"})
+    end
+  end
+
+  def revoke_admin(conn, %{"user_id" => user_id}) do
+    case UserService.revoke_admin(user_id) do
+      {:ok, :updated} -> json(conn, %{status: "success", message: "Admin revoked"})
+      {:error, :user_not_found} -> json(conn, %{status: "error", message: "User not found"})
+    end
+  end
+
+  def make_superuser(conn, %{"user_id" => user_id}) do
+    case UserService.make_superuser(user_id) do
+      {:ok, :updated} -> json(conn, %{status: "success", message: "User promoted to superuser"})
+      {:error, :user_not_found} -> json(conn, %{status: "error", message: "User not found"})
+    end
+  end
+
+  def revoke_superuser(conn, %{"user_id" => user_id}) do
+    case UserService.revoke_superuser(user_id) do
+      {:ok, :updated} -> json(conn, %{status: "success", message: "Superuser rights revoked"})
+      {:error, :user_not_found} -> json(conn, %{status: "error", message: "User not found"})
+    end
+  end
+
+  defp ensure_admin(conn, _) do
+    # Retrieve user_role
+    user_role = conn.assigns[:user_role]
+
+    # Check if the user_role is "admin"
+    if user_role == "admin" do
+      conn
+    else
+      conn
+      |> put_status(:unauthorized)
+      |> json(%{error: "Not authorized"})
+      |> halt()
+    end
+  end
 
 end

@@ -54,10 +54,6 @@ defmodule EmailNotifications.Repositories.UserRepo do
     end
   end
 
-  # def get_users_emails_by_ids(user_ids) do
-  #   conn = MongoClient.get_connection()
-  #   Mongo.find(conn, @collection, %{"_id" => %{"$in" => user_ids}}, %{projection: %{"email" => 1, "_id" => 0}})
-  # end
 
   def get_users_emails_by_ids(user_ids) do
     conn = MongoClient.get_connection()
@@ -67,10 +63,10 @@ defmodule EmailNotifications.Repositories.UserRepo do
 
 
 
-  def update_user(id, updates) do
-    conn = MongoClient.get_connection()
-    Mongo.update_one(conn, @collection, %{"_id" => id}, %{"$set" => updates})
-  end
+  # def update_user(id, updates) do
+  #   conn = MongoClient.get_connection()
+  #   Mongo.update_one(conn, @collection, %{"_id" => id}, %{"$set" => updates})
+  # end
 
   def get_user_details(user_id) do
     user_id
@@ -101,15 +97,6 @@ defmodule EmailNotifications.Repositories.UserRepo do
       [user_profile] -> {:ok, user_profile}
     end
   end
-
-
-  # Update a user's role
-  # def update_user_role(user_id, role) do
-  #   conn = MongoClient.get_connection()
-
-  #   Mongo.update_one(conn, @collection, %{"_id" => BSON.ObjectId.decode!(user_id)}, %{"$set" => %{"role" => role}})
-
-  # end
 
 
   def update_user_role(user_id, role, action) do
@@ -146,6 +133,26 @@ defmodule EmailNotifications.Repositories.UserRepo do
     |> Enum.to_list()
   end
 
+  def update_user(user_id, updates) do
+    conn = MongoClient.get_connection()
+    query = %{"_id" => BSON.ObjectId.decode!(user_id)}
+    case Mongo.update_one(conn, @collection, query, %{"$set" => updates}, []) do
+      {:ok, _} -> {:ok, :updated}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def add_admin(user_id) do
+    update_user(user_id, %{"role" => ["admin"]})
+  end
+
+  def revoke_admin(user_id) do
+    update_user(user_id, %{"role" => []})
+  end
+
+  def toggle_super_user(user_id, status) do
+    update_user(user_id, %{"is_super_user" => status})
+  end
 
 
 

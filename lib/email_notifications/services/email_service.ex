@@ -189,7 +189,7 @@ defmodule EmailNotifications.Services.EmailService do
 
           case EmailRepo.create_email(email_data) do
             {:ok, saved_email} ->
-              # Add the inserted_id to the list
+
               {:cont, {:ok, [saved_email[:_id] | elem(acc, 1)]}} # Accumulate the inserted IDs
             {:error, reason} ->
               {:halt, {:error, reason}}  # Stop processing if any error occurs
@@ -215,20 +215,18 @@ defmodule EmailNotifications.Services.EmailService do
     end
   end
 
-  def get_group_email_status(user_id, user_role, user_plan, group_id) do
-    with :ok <- validate_role_and_plan(user_role, user_plan),
-         {:ok, status} <- EmailRepo.get_group_email_status(group_id, user_id) do
-      {:ok, status}
+  def get_group_email_status(user_id, _user_role, user_plan, group_id) do
+    if user_plan == "gold" do
+      case EmailRepo.get_group_email_status(group_id, user_id) do
+        {:ok, status} ->
+          {:ok, status}
+        {:error, reason} ->
+          {:error, reason}
+      end
     else
-      {:error, :unauthorized} -> {:error, "Unauthorized access"}
-      {:error, :invalid_plan} -> {:error, "Only gold plan users can access this feature"}
-      {:error, reason} -> {:error, reason}
+      {:error, "Only gold plan users can access this feature"}
     end
   end
-
-  defp validate_role_and_plan("frontend", "gold"), do: :ok
-  defp validate_role_and_plan(_, _), do: {:error, :invalid_plan}
-
 
   defp validate_role(role) when role in @allowed_roles, do: :ok
   defp validate_role(_), do: {:error, :insufficient_permissions}

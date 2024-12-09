@@ -46,5 +46,8 @@ defmodule EmailNotificationsWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  # cors config
+  plug CORSPlug, origin: "*"
+
   plug EmailNotificationsWeb.Router
 end

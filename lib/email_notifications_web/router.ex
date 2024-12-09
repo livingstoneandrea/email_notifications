@@ -41,17 +41,27 @@ defmodule EmailNotificationsWeb.Router do
       pipe_through :jwt_auth
 
       post "/send", EmailController, :send_email
+      post "/send-email-to-group", EmailController, :send_email_to_group
       delete "/:email_id", EmailController, :delete_email
       get "/", EmailController, :emails_history
       post "/retry", EmailController, :retry_email
-      get "/status", EmailController, :get_email_status
+      get "/status", EmailController, :get_group_email_status
     end
 
     scope "/admin" do
       pipe_through :jwt_auth
+
+      # Admin routes
       patch "/grant-admin", UserController, :grant_admin_role
       patch "/revoke-admin", UserController, :update_user_role
       get "/view-users-with_emails", UserController, :index
+
+      post "/users/:user_id/upgrade", UserController, :upgrade_user
+      post "/users/:user_id/downgrade", UserController, :downgrade_user
+      post "/users/:user_id/add_admin", UserController, :add_admin
+      post "/users/:user_id/revoke_admin", UserController, :revoke_admin
+      post "/users/:user_id/make_superuser", UserController, :make_superuser
+      post "/users/:user_id/revoke_superuser", UserController, :revoke_superuser
     end
 
   end

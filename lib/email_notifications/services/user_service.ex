@@ -108,7 +108,7 @@ defmodule EmailNotifications.Services.UserService do
 
   # Grant or revoke roles for a user
   def update_user_role(target_user_id) do
-  
+
     case UserRepo.get_user_by_id(target_user_id) do
       {:error, _} -> {:error, "Target user not found"}
       {:ok, %{"first_name" => first_name}} ->
@@ -133,6 +133,54 @@ defmodule EmailNotifications.Services.UserService do
     case UserRepo.get_users_with_emails() do
       [] -> {:error, "No users found"}
       users -> {:ok, users}
+    end
+  end
+
+  def upgrade_user(user_id) do
+    UserRepo.get_user_by_id(user_id)
+    |> case do
+      {:ok, user} -> UserRepo.update_user(user_id, %{"plan" => "gold"})
+      {:error, _} -> {:error, :user_not_found}
+    end
+  end
+
+  def downgrade_user(user_id) do
+    UserRepo.get_user_by_id(user_id)
+    |> case do
+      {:ok, user} -> UserRepo.update_user(user_id, %{"plan" => "free"})
+      {:error, _} -> {:error, :user_not_found}
+    end
+  end
+
+  def add_admin(user_id) do
+    UserRepo.get_user_by_id(user_id)
+    |> case do
+      {:ok, user} -> UserRepo.add_admin(user_id)
+      {:error, _} -> {:error, :user_not_found}
+    end
+  end
+
+  def revoke_admin(user_id) do
+    UserRepo.get_user_by_id(user_id)
+    |> case do
+      {:ok, user} -> UserRepo.revoke_admin(user_id)
+      {:error, _} -> {:error, :user_not_found}
+    end
+  end
+
+  def make_superuser(user_id) do
+    UserRepo.get_user_by_id(user_id)
+    |> case do
+      {:ok, user} -> UserRepo.toggle_super_user(user_id, true)
+      {:error, _} -> {:error, :user_not_found}
+    end
+  end
+
+  def revoke_superuser(user_id) do
+    UserRepo.get_user_by_id(user_id)
+    |> case do
+      {:ok, user} -> UserRepo.toggle_super_user(user_id, false)
+      {:error, _} -> {:error, :user_not_found}
     end
   end
 

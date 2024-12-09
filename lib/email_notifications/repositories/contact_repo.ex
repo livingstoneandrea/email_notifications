@@ -44,6 +44,8 @@ defmodule EmailNotifications.Repositories.ContactRepo do
     end
   end
 
+
+
   def get_contacts_by_group(group_id) do
     conn = MongoClient.get_connection()
 
@@ -52,19 +54,32 @@ defmodule EmailNotifications.Repositories.ContactRepo do
       nil ->
         {:error, :group_not_found}
 
-      %{"contacts" => contact_ids} ->
-        # Decode contact IDs and query the contacts collection
-        decoded_contact_ids = Enum.map(contact_ids, &BSON.ObjectId.decode!/1)
+      %{"contacts" => contact_ids} when is_list(contact_ids) ->
+        # Ensure all contact IDs are valid BSON.ObjectId instances
+        decoded_contact_ids =
+          Enum.map(contact_ids, fn
+            %BSON.ObjectId{} = id -> id
+            id -> BSON.ObjectId.decode!(id)
+          end)
 
         query = %{"_id" => %{"$in" => decoded_contact_ids}}
 
-        case Mongo.find(conn, @collection, query) |> Enum.to_list() do
-          [] -> {:error, :contacts_not_found}
-          contacts -> {:ok, contacts}
-        end
+        # Fetch all contacts, skipping errors for missing ones
+        contacts =
+          Mongo.find(conn, @collection, query)
+          |> Enum.reduce([], fn contact, acc ->
+            case contact do
+              nil -> acc # Skip errors or missing contacts
+              contact -> [contact | acc]
+            end
+          end)
+
+        {:ok, Enum.reverse(contacts)} # Return valid contacts even if empty
 
       _ ->
         {:error, :invalid_group_data}
     end
   end
+
+
 end

@@ -65,8 +65,11 @@ defmodule EmailNotifications.Repositories.EmailRepo do
     Mongo.find(conn, @collection, %{"recipient" => %{"$in" => email_list}})
   end
 
+
   def get_group_email_status(group_id, user_id) do
     conn = MongoClient.get_connection()
+
+    Logger.info("Getting email status for group #{group_id} and user #{user_id}")
 
     # Fetch the group by ID and ensure it belongs to the user
     case Mongo.find_one(conn, @groups_collection, %{
@@ -76,10 +79,13 @@ defmodule EmailNotifications.Repositories.EmailRepo do
       nil ->
         {:error, :group_not_found}
 
-      %{"email_status" => email_status} ->
+      %{"email_status" => %{"failed" => failed_ids, "pending" => pending, "sent" => sent}} ->
+      
         failed_contact_ids =
-          email_status["failed"]
-          |> Enum.map(&BSON.ObjectId.decode!/1)
+          case failed_ids do
+            [] -> []
+            ids -> Enum.map(ids, &BSON.ObjectId.decode!/1)
+          end
 
         # Fetch details of failed contacts
         failed_contacts =
@@ -88,14 +94,19 @@ defmodule EmailNotifications.Repositories.EmailRepo do
 
         {:ok,
          %{
-           pending: email_status["pending"] || 0,
-           sent: email_status["sent"] || 0,
+           pending: pending || 0,
+           sent: sent || 0,
            failed: failed_contacts
          }}
 
-      _ ->
+      %{"email_status" => _} ->
         {:error, :invalid_group_data}
+
+      _ ->
+        {:error, :group_not_found}
     end
   end
+
+
 
 end

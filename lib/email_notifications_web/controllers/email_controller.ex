@@ -1,5 +1,6 @@
 defmodule EmailNotificationsWeb.EmailController do
   use EmailNotificationsWeb, :controller
+  alias EmailNotifications.Repositories.UserRepo
   alias EmailNotifications.Services.EmailService
 
   require Logger
@@ -185,7 +186,8 @@ defmodule EmailNotificationsWeb.EmailController do
     end
   end
 
-  def send_email_to_group(conn, %{"user_id" => user_id, "group_id" => group_id, "email_attrs" => email_attrs}) do
+  def send_email_to_group(conn, %{"group_id" => group_id, "email_attrs" => email_attrs}) do
+    user_id = conn.assigns[:user_id]
     user_role = conn.assigns[:user_role]
 
     case EmailService.send_email_to_group(user_id, user_role, group_id, email_attrs) do
@@ -206,7 +208,7 @@ defmodule EmailNotificationsWeb.EmailController do
     user_role = conn.assigns[:user_role]
 
     # Fetch the user plan from MongoDB
-    case UserRepo.get_user_plan(user_id) do
+    case UserRepo.get_user_plan(BSON.ObjectId.decode!(user_id)) do
       {:ok, user_plan} ->
         case EmailService.get_group_email_status(user_id, user_role, user_plan, group_id) do
           {:ok, status} ->

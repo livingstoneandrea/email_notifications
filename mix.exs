@@ -52,7 +52,8 @@ defmodule EmailNotifications.MixProject do
       {:plug_cowboy, "~> 2.7"},
       {:hackney, "~> 1.20"},
       {:argon2_elixir, "~> 3.0"},
-      {:typed_struct, "~> 0.1.4"}
+      {:typed_struct, "~> 0.1.4"},
+      {:cors_plug, "~> 2.0"}
     ]
   end
 
